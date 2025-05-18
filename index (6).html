@@ -1,0 +1,958 @@
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>App de Cálculos PWA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col md:flex-row">
+  <!-- Sidebar -->
+  <aside
+    class="w-full md:w-72 bg-white border-r border-gray-200 flex flex-col"
+    aria-label="Sidebar com abas"
+  >
+    <div class="flex items-center justify-center h-16 border-b border-gray-200 font-semibold text-xl text-blue-700">
+      Menu
+    </div>
+    <nav class="flex flex-col flex-grow">
+      <button
+        id="tab-calculos"
+        class="tab-button px-6 py-4 text-left border-l-4 border-blue-600 bg-blue-50 text-blue-700 font-semibold focus:outline-none"
+        aria-selected="true"
+        role="tab"
+        aria-controls="panel-calculos"
+        tabindex="0"
+      >
+        <i class="fas fa-calculator mr-2"></i> Cálculos
+      </button>
+      <button
+        id="tab-calendario"
+        class="tab-button px-6 py-4 text-left border-l-4 border-transparent hover:bg-blue-50 hover:border-blue-600 focus:outline-none"
+        aria-selected="false"
+        role="tab"
+        aria-controls="panel-calendario"
+        tabindex="-1"
+      >
+        <i class="fas fa-calendar-alt mr-2"></i> Calendário
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-grow p-6 overflow-auto">
+    <!-- Cálculos Panel -->
+    <section
+      id="panel-calculos"
+      role="tabpanel"
+      aria-labelledby="tab-calculos"
+      tabindex="0"
+      class="block"
+    >
+      <h1 class="text-3xl font-semibold mb-6 text-gray-800">App de Cálculos</h1>
+
+      <div class="w-full max-w-4xl bg-white rounded-lg shadow-md p-6">
+        <form id="calcForm" class="space-y-6" autocomplete="off">
+          <input type="hidden" id="editIndex" value="-1" />
+          <div>
+            <label for="data" class="block text-gray-700 font-semibold mb-1">Data</label>
+            <input
+              type="date"
+              id="data"
+              name="data"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label for="diaria" class="block text-gray-700 font-semibold mb-1">Diária (R$)</label>
+            <input
+              type="number"
+              id="diaria"
+              name="diaria"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label for="despesas" class="block text-gray-700 font-semibold mb-1">Despesas (R$)</label>
+            <input
+              type="number"
+              id="despesas"
+              name="despesas"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label for="reserva" class="block text-gray-700 font-semibold mb-1">Reserva (R$) (Opcional)</label>
+            <input
+              type="number"
+              id="reserva"
+              name="reserva"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="total" class="block text-gray-700 font-semibold mb-1">Total (R$)</label>
+            <input
+              type="text"
+              id="total"
+              name="total"
+              readonly
+              class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700 font-semibold"
+              placeholder="0,00"
+            />
+          </div>
+
+          <button
+            type="submit"
+            id="btnSubmit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition-colors"
+          >
+            Adicionar
+          </button>
+          <button
+            type="button"
+            id="btnCancelarEdicao"
+            class="w-full mt-2 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 rounded-md transition-colors hidden"
+          >
+            Cancelar Edição
+          </button>
+        </form>
+      </div>
+
+      <section class="w-full max-w-4xl mt-10">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-800">Registros</h2>
+        <div class="overflow-x-auto rounded-lg shadow-md bg-white">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-blue-600 text-white">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left text-sm font-semibold">Data</th>
+                <th scope="col" class="px-4 py-3 text-right text-sm font-semibold">Diária (R$)</th>
+                <th scope="col" class="px-4 py-3 text-right text-sm font-semibold">Despesas (R$)</th>
+                <th scope="col" class="px-4 py-3 text-right text-sm font-semibold">Reserva (R$)</th>
+                <th scope="col" class="px-4 py-3 text-right text-sm font-semibold">Total (R$)</th>
+                <th scope="col" class="px-4 py-3 text-center text-sm font-semibold">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTableBody" class="divide-y divide-gray-200 bg-white"></tbody>
+            <tfoot class="bg-gray-100 font-semibold text-gray-800">
+              <tr>
+                <td class="px-4 py-3 text-left">Totais</td>
+                <td id="sumDiaria" class="px-4 py-3 text-right">0,00</td>
+                <td id="sumDespesas" class="px-4 py-3 text-right">0,00</td>
+                <td id="sumReserva" class="px-4 py-3 text-right">0,00</td>
+                <td id="sumTotal" class="px-4 py-3 text-right">0,00</td>
+                <td class="px-4 py-3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- Calendário Panel -->
+    <section
+      id="panel-calendario"
+      role="tabpanel"
+      aria-labelledby="tab-calendario"
+      tabindex="0"
+      class="hidden max-w-4xl"
+    >
+      <h1 class="text-3xl font-semibold mb-6 text-gray-800 flex items-center">
+        <i class="fas fa-calendar-alt mr-3 text-blue-600"></i> Calendário
+      </h1>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <button
+            id="prevMonth"
+            aria-label="Mês anterior"
+            class="p-2 rounded hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <i class="fas fa-chevron-left text-blue-600"></i>
+          </button>
+          <h2 id="monthYear" class="text-xl font-semibold text-gray-800"></h2>
+          <button
+            id="nextMonth"
+            aria-label="Próximo mês"
+            class="p-2 rounded hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <i class="fas fa-chevron-right text-blue-600"></i>
+          </button>
+        </div>
+
+        <table class="w-full table-fixed border-collapse text-center">
+          <thead>
+            <tr class="text-blue-600 font-semibold border-b border-gray-300">
+              <th class="py-2">Dom</th>
+              <th class="py-2">Seg</th>
+              <th class="py-2">Ter</th>
+              <th class="py-2">Qua</th>
+              <th class="py-2">Qui</th>
+              <th class="py-2">Sex</th>
+              <th class="py-2">Sáb</th>
+            </tr>
+          </thead>
+          <tbody id="calendarBody" class="text-gray-700"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal para adicionar despesas no calendário -->
+  <div
+    id="modalDespesa"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+  >
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+      <h3 id="modalTitle" class="text-xl font-semibold mb-4 text-gray-800">Adicionar Despesa</h3>
+      <form id="formDespesa" class="space-y-4" autocomplete="off">
+        <input type="hidden" id="modalEditIndex" value="-1" />
+        <div>
+          <label for="modalData" class="block text-gray-700 font-semibold mb-1">Data</label>
+          <input
+            type="date"
+            id="modalData"
+            name="modalData"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            readonly
+          />
+        </div>
+        <div>
+          <label for="modalDiaria" class="block text-gray-700 font-semibold mb-1">Diária (R$)</label>
+          <input
+            type="number"
+            id="modalDiaria"
+            name="modalDiaria"
+            min="0"
+            step="0.01"
+            placeholder="0,00"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        <div>
+          <label for="modalDespesas" class="block text-gray-700 font-semibold mb-1">Despesas (R$)</label>
+          <input
+            type="number"
+            id="modalDespesas"
+            name="modalDespesas"
+            min="0"
+            step="0.01"
+            placeholder="0,00"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        <div>
+          <label for="modalReserva" class="block text-gray-700 font-semibold mb-1">Reserva (R$) (Opcional)</label>
+          <input
+            type="number"
+            id="modalReserva"
+            name="modalReserva"
+            min="0"
+            step="0.01"
+            placeholder="0,00"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label for="modalTotal" class="block text-gray-700 font-semibold mb-1">Total (R$)</label>
+          <input
+            type="text"
+            id="modalTotal"
+            name="modalTotal"
+            readonly
+            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-700 font-semibold"
+            placeholder="0,00"
+          />
+        </div>
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            type="button"
+            id="btnCancelarModal"
+            class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-gray-500"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            id="btnSalvarModal"
+            class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // PWA install prompt handling
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Optionally, you can show a custom install button here
+      // For simplicity, we rely on browser UI
+    });
+
+    // Tabs logic
+    const tabCalculos = document.getElementById('tab-calculos');
+    const tabCalendario = document.getElementById('tab-calendario');
+    const panelCalculos = document.getElementById('panel-calculos');
+    const panelCalendario = document.getElementById('panel-calendario');
+
+    function activateTab(tabButton, panel) {
+      [tabCalculos, tabCalendario].forEach((btn) => {
+        btn.classList.remove('bg-blue-50', 'border-blue-600', 'text-blue-700', 'font-semibold');
+        btn.classList.add('border-transparent', 'text-gray-700', 'font-normal');
+        btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('tabindex', '-1');
+      });
+      [panelCalculos, panelCalendario].forEach((p) => p.classList.add('hidden'));
+
+      tabButton.classList.add('bg-blue-50', 'border-blue-600', 'text-blue-700', 'font-semibold');
+      tabButton.classList.remove('border-transparent', 'text-gray-700', 'font-normal');
+      tabButton.setAttribute('aria-selected', 'true');
+      tabButton.setAttribute('tabindex', '0');
+      panel.classList.remove('hidden');
+      panel.focus();
+    }
+
+    tabCalculos.addEventListener('click', () => activateTab(tabCalculos, panelCalculos));
+    tabCalendario.addEventListener('click', () => activateTab(tabCalendario, panelCalendario));
+
+    activateTab(tabCalculos, panelCalculos);
+
+    // App de cálculos
+    const form = document.getElementById('calcForm');
+    const editIndexInput = document.getElementById('editIndex');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnCancelarEdicao = document.getElementById('btnCancelarEdicao');
+    const totalInput = document.getElementById('total');
+    const recordsTableBody = document.getElementById('recordsTableBody');
+    const sumDiariaEl = document.getElementById('sumDiaria');
+    const sumDespesasEl = document.getElementById('sumDespesas');
+    const sumReservaEl = document.getElementById('sumReserva');
+    const sumTotalEl = document.getElementById('sumTotal');
+
+    let registros = [];
+
+    function formatBRL(value) {
+      return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDateISO(dateStr) {
+      const date = new Date(dateStr + 'T00:00:00');
+      const tzOffset = date.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 10);
+      return localISOTime;
+    }
+
+    function atualizarTotal() {
+      const diaria = parseFloat(form.diaria.value) || 0;
+      const despesas = parseFloat(form.despesas.value) || 0;
+      const reserva = parseFloat(form.reserva.value) || 0;
+      const total = diaria - despesas - reserva;
+      totalInput.value = formatBRL(total >= 0 ? total : 0);
+    }
+
+    function atualizarTotais() {
+      let sumDiaria = 0;
+      let sumDespesas = 0;
+      let sumReserva = 0;
+      let sumTotal = 0;
+
+      registros.forEach((r) => {
+        sumDiaria += r.diaria;
+        sumDespesas += r.despesas;
+        sumReserva += r.reserva;
+        sumTotal += r.total;
+      });
+
+      sumDiariaEl.textContent = formatBRL(sumDiaria);
+      sumDespesasEl.textContent = formatBRL(sumDespesas);
+      sumReservaEl.textContent = formatBRL(sumReserva);
+      sumTotalEl.textContent = formatBRL(sumTotal);
+    }
+
+    function renderizarTabela() {
+      registros.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+      recordsTableBody.innerHTML = '';
+      registros.forEach((registro, index) => {
+        const tr = document.createElement('tr');
+        tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+
+        const tdData = document.createElement('td');
+        tdData.className = 'px-4 py-3 text-left text-sm text-gray-700';
+        const dt = new Date(registro.data + 'T00:00:00');
+        tdData.textContent = dt.toLocaleDateString('pt-BR');
+
+        const tdDiaria = document.createElement('td');
+        tdDiaria.className = 'px-4 py-3 text-right text-sm text-gray-700';
+        tdDiaria.textContent = formatBRL(registro.diaria);
+
+        const tdDespesas = document.createElement('td');
+        tdDespesas.className = 'px-4 py-3 text-right text-sm text-gray-700';
+        tdDespesas.textContent = formatBRL(registro.despesas);
+
+        const tdReserva = document.createElement('td');
+        tdReserva.className = 'px-4 py-3 text-right text-sm text-gray-700';
+        tdReserva.textContent = formatBRL(registro.reserva);
+
+        const tdTotal = document.createElement('td');
+        tdTotal.className = 'px-4 py-3 text-right text-sm font-semibold text-gray-900';
+        tdTotal.textContent = formatBRL(registro.total);
+
+        const tdAcoes = document.createElement('td');
+        tdAcoes.className = 'px-4 py-3 text-center text-sm space-x-2';
+
+        const btnEdit = document.createElement('button');
+        btnEdit.className =
+          'text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded';
+        btnEdit.setAttribute('aria-label', 'Editar registro');
+        btnEdit.innerHTML = '<i class="fas fa-edit"></i>';
+        btnEdit.addEventListener('click', () => {
+          iniciarEdicao(index);
+        });
+
+        const btnDelete = document.createElement('button');
+        btnDelete.className =
+          'text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 rounded';
+        btnDelete.setAttribute('aria-label', 'Excluir registro');
+        btnDelete.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        btnDelete.addEventListener('click', () => {
+          registros.splice(index, 1);
+          renderizarTabela();
+          atualizarTotais();
+          renderCalendar(currentYear, currentMonth);
+          cancelarEdicao();
+        });
+
+        tdAcoes.appendChild(btnEdit);
+        tdAcoes.appendChild(btnDelete);
+
+        tr.appendChild(tdData);
+        tr.appendChild(tdDiaria);
+        tr.appendChild(tdDespesas);
+        tr.appendChild(tdReserva);
+        tr.appendChild(tdTotal);
+        tr.appendChild(tdAcoes);
+
+        recordsTableBody.appendChild(tr);
+      });
+    }
+
+    function iniciarEdicao(index) {
+      const registro = registros[index];
+      editIndexInput.value = index;
+      form.data.value = registro.data;
+      form.diaria.value = registro.diaria;
+      form.despesas.value = registro.despesas;
+      form.reserva.value = registro.reserva;
+      atualizarTotal();
+      btnSubmit.textContent = 'Salvar Alterações';
+      btnCancelarEdicao.classList.remove('hidden');
+      form.data.focus();
+    }
+
+    function cancelarEdicao() {
+      editIndexInput.value = -1;
+      form.reset();
+      totalInput.value = '';
+      btnSubmit.textContent = 'Adicionar';
+      btnCancelarEdicao.classList.add('hidden');
+    }
+
+    btnCancelarEdicao.addEventListener('click', () => {
+      cancelarEdicao();
+    });
+
+    form.diaria.addEventListener('input', atualizarTotal);
+    form.despesas.addEventListener('input', atualizarTotal);
+    form.reserva.addEventListener('input', atualizarTotal);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      let dataRaw = form.data.value;
+      if (!dataRaw) {
+        alert('Por favor, selecione uma data válida.');
+        return;
+      }
+      const data = formatDateISO(dataRaw);
+
+      const diaria = parseFloat(form.diaria.value) || 0;
+      const despesas = parseFloat(form.despesas.value) || 0;
+      const reserva = parseFloat(form.reserva.value) || 0;
+      let total = diaria - despesas - reserva;
+      if (total < 0) total = 0;
+
+      const editIndex = parseInt(editIndexInput.value, 10);
+
+      if (editIndex >= 0) {
+        registros[editIndex] = { data, diaria, despesas, reserva, total };
+        cancelarEdicao();
+      } else {
+        registros.push({ data, diaria, despesas, reserva, total });
+      }
+
+      renderizarTabela();
+      atualizarTotais();
+      renderCalendar(currentYear, currentMonth);
+      form.reset();
+      totalInput.value = '';
+      form.data.focus();
+    });
+
+    // Calendário
+    const monthYearEl = document.getElementById('monthYear');
+    const calendarBody = document.getElementById('calendarBody');
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+
+    let today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth();
+
+    const monthNames = [
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
+    ];
+
+    function renderCalendar(year, month) {
+      monthYearEl.textContent = `${monthNames[month]} de ${year}`;
+      calendarBody.innerHTML = '';
+
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const firstWeekDay = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+
+      let dayCounter = 1;
+      for (let week = 0; week < 6; week++) {
+        const tr = document.createElement('tr');
+
+        for (let day = 0; day < 7; day++) {
+          const td = document.createElement('td');
+          td.className = 'border border-gray-200 h-20 align-top p-1 relative';
+
+          if (week === 0 && day < firstWeekDay) {
+            td.innerHTML = '&nbsp;';
+          } else if (dayCounter > daysInMonth) {
+            td.innerHTML = '&nbsp;';
+          } else {
+            const dateStr = formatDateISO(`${year}-${String(month + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`);
+
+            const dayNumber = document.createElement('div');
+            dayNumber.textContent = dayCounter;
+            dayNumber.className = 'text-xs font-semibold text-gray-600 absolute top-1 left-1';
+            td.appendChild(dayNumber);
+
+            const registrosDoDia = registros.filter((r) => r.data === dateStr);
+
+            if (registrosDoDia.length > 0) {
+              const resumo = document.createElement('div');
+              resumo.className = 'mt-5 text-xs text-center text-gray-800 space-y-0.5';
+
+              let somaDiaria = 0;
+              let somaDespesas = 0;
+              let somaReserva = 0;
+              let somaTotal = 0;
+
+              registrosDoDia.forEach((r) => {
+                somaDiaria += r.diaria;
+                somaDespesas += r.despesas;
+                somaReserva += r.reserva;
+                somaTotal += r.total;
+              });
+
+              const diariaEl = document.createElement('div');
+              diariaEl.innerHTML = `<i class="fas fa-bed text-blue-500"></i> ${formatBRL(somaDiaria)}`;
+              resumo.appendChild(diariaEl);
+
+              const despesasEl = document.createElement('div');
+              despesasEl.innerHTML = `<i class="fas fa-receipt text-red-500"></i> ${formatBRL(somaDespesas)}`;
+              resumo.appendChild(despesasEl);
+
+              const reservaEl = document.createElement('div');
+              reservaEl.innerHTML = `<i class="fas fa-piggy-bank text-green-600"></i> ${formatBRL(somaReserva)}`;
+              resumo.appendChild(reservaEl);
+
+              const totalEl = document.createElement('div');
+              totalEl.className = 'font-semibold text-gray-900';
+              totalEl.textContent = `Total: ${formatBRL(somaTotal)}`;
+              resumo.appendChild(totalEl);
+
+              td.appendChild(resumo);
+              td.classList.add('bg-blue-50', 'cursor-pointer', 'rounded');
+              td.setAttribute('tabindex', '0');
+              td.setAttribute('role', 'button');
+              td.setAttribute('aria-label', `Dia ${dayCounter} com registros. Clique para filtrar.`);
+
+              td.addEventListener('click', () => {
+                activateTab(tabCalculos, panelCalculos);
+                filtrarRegistrosPorData(dateStr);
+              });
+              td.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                  ev.preventDefault();
+                  td.click();
+                }
+              });
+            } else {
+              td.classList.add('text-gray-400', 'cursor-pointer', 'hover:bg-blue-50', 'rounded');
+              td.setAttribute('tabindex', '0');
+              td.setAttribute('role', 'button');
+              td.setAttribute('aria-label', `Dia ${dayCounter} sem registros. Clique para adicionar despesa.`);
+
+              td.addEventListener('click', () => {
+                abrirModalDespesa(dateStr);
+              });
+              td.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                  ev.preventDefault();
+                  td.click();
+                }
+              });
+            }
+
+            dayCounter++;
+          }
+
+          tr.appendChild(td);
+        }
+
+        calendarBody.appendChild(tr);
+      }
+    }
+
+    prevMonthBtn.addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar(currentYear, currentMonth);
+    });
+
+    nextMonthBtn.addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentYear, currentMonth);
+    });
+
+    // Filtra registros na tabela para uma data específica
+    function filtrarRegistrosPorData(data) {
+      const registrosFiltrados = registros.filter((r) => r.data === data);
+
+      recordsTableBody.innerHTML = '';
+      registrosFiltrados.forEach((registro, index) => {
+        const tr = document.createElement('tr');
+        tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+
+        const tdData = document.createElement('td');
+        tdData.className = 'px-4 py-3 text-left text-sm text-gray-700';
+        const dt = new Date(registro.data + 'T00:00:00');
+        tdData.textContent = dt.toLocaleDateString('pt-BR');
+
+        const tdDiaria = document.createElement('td');
+        tdDiaria.className = 'px-4 py-3 text-right text-sm text-gray-700';
+        tdDiaria.textContent = formatBRL(registro.diaria);
+
+        const tdDespesas = document.createElement('td');
+        tdDespesas.className = 'px-4 py-3 text-right text-sm text-gray-700';
+        tdDespesas.textContent = formatBRL(registro.despesas);
+
+        const tdReserva = document.createElement('td');
+        tdReserva.className = 'px-4 py-3 text-right text-sm text-gray-700';
+        tdReserva.textContent = formatBRL(registro.reserva);
+
+        const tdTotal = document.createElement('td');
+        tdTotal.className = 'px-4 py-3 text-right text-sm font-semibold text-gray-900';
+        tdTotal.textContent = formatBRL(registro.total);
+
+        const tdAcoes = document.createElement('td');
+        tdAcoes.className = 'px-4 py-3 text-center text-sm space-x-2';
+
+        const btnEdit = document.createElement('button');
+        btnEdit.className =
+          'text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded';
+        btnEdit.setAttribute('aria-label', 'Editar registro');
+        btnEdit.innerHTML = '<i class="fas fa-edit"></i>';
+        btnEdit.addEventListener('click', () => {
+          iniciarEdicao(registros.indexOf(registro));
+        });
+
+        const btnDelete = document.createElement('button');
+        btnDelete.className =
+          'text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 rounded';
+        btnDelete.setAttribute('aria-label', 'Excluir registro');
+        btnDelete.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        btnDelete.addEventListener('click', () => {
+          const idxOriginal = registros.findIndex(
+            (r) =>
+              r.data === registro.data &&
+              r.diaria === registro.diaria &&
+              r.despesas === registro.despesas &&
+              r.reserva === registro.reserva &&
+              r.total === registro.total
+          );
+          if (idxOriginal > -1) {
+            registros.splice(idxOriginal, 1);
+          }
+          filtrarRegistrosPorData(data);
+          atualizarTotais();
+          renderCalendar(currentYear, currentMonth);
+          cancelarEdicao();
+        });
+
+        tdAcoes.appendChild(btnEdit);
+        tdAcoes.appendChild(btnDelete);
+
+        tr.appendChild(tdData);
+        tr.appendChild(tdDiaria);
+        tr.appendChild(tdDespesas);
+        tr.appendChild(tdReserva);
+        tr.appendChild(tdTotal);
+        tr.appendChild(tdAcoes);
+
+        recordsTableBody.appendChild(tr);
+      });
+
+      let sumDiaria = 0;
+      let sumDespesas = 0;
+      let sumReserva = 0;
+      let sumTotal = 0;
+
+      registrosFiltrados.forEach((r) => {
+        sumDiaria += r.diaria;
+        sumDespesas += r.despesas;
+        sumReserva += r.reserva;
+        sumTotal += r.total;
+      });
+
+      sumDiariaEl.textContent = formatBRL(sumDiaria);
+      sumDespesasEl.textContent = formatBRL(sumDespesas);
+      sumReservaEl.textContent = formatBRL(sumReserva);
+      sumTotalEl.textContent = formatBRL(sumTotal);
+    }
+
+    function mostrarTodosRegistros() {
+      renderizarTabela();
+      atualizarTotais();
+    }
+
+    // Modal lógica
+    const modal = document.getElementById('modalDespesa');
+    const formDespesa = document.getElementById('formDespesa');
+    const modalEditIndex = document.getElementById('modalEditIndex');
+    const modalData = document.getElementById('modalData');
+    const modalDiaria = document.getElementById('modalDiaria');
+    const modalDespesas = document.getElementById('modalDespesas');
+    const modalReserva = document.getElementById('modalReserva');
+    const modalTotal = document.getElementById('modalTotal');
+    const btnCancelarModal = document.getElementById('btnCancelarModal');
+
+    function abrirModalDespesa(data, index = -1) {
+      modalData.value = data;
+      modalDiaria.value = '';
+      modalDespesas.value = '';
+      modalReserva.value = '';
+      modalTotal.value = '';
+      modalEditIndex.value = index;
+      modal.classList.remove('hidden');
+      modalDiaria.focus();
+
+      if (index >= 0) {
+        const registro = registros[index];
+        modalData.value = registro.data;
+        modalDiaria.value = registro.diaria;
+        modalDespesas.value = registro.despesas;
+        modalReserva.value = registro.reserva;
+        atualizarTotalModal();
+      }
+    }
+
+    function fecharModalDespesa() {
+      modal.classList.add('hidden');
+      modalEditIndex.value = -1;
+    }
+
+    function atualizarTotalModal() {
+      const diaria = parseFloat(modalDiaria.value) || 0;
+      const despesas = parseFloat(modalDespesas.value) || 0;
+      const reserva = parseFloat(modalReserva.value) || 0;
+      const total = diaria - despesas - reserva;
+      modalTotal.value = formatBRL(total >= 0 ? total : 0);
+    }
+
+    modalDiaria.addEventListener('input', atualizarTotalModal);
+    modalDespesas.addEventListener('input', atualizarTotalModal);
+    modalReserva.addEventListener('input', atualizarTotalModal);
+
+    btnCancelarModal.addEventListener('click', (e) => {
+      e.preventDefault();
+      fecharModalDespesa();
+    });
+
+    formDespesa.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      let dataRaw = modalData.value;
+      if (!dataRaw) {
+        alert('Data inválida.');
+        return;
+      }
+      const data = formatDateISO(dataRaw);
+
+      const diaria = parseFloat(modalDiaria.value) || 0;
+      const despesas = parseFloat(modalDespesas.value) || 0;
+      const reserva = parseFloat(modalReserva.value) || 0;
+      let total = diaria - despesas - reserva;
+      if (total < 0) total = 0;
+
+      const index = parseInt(modalEditIndex.value, 10);
+
+      if (index >= 0) {
+        registros[index] = { data, diaria, despesas, reserva, total };
+      } else {
+        registros.push({ data, diaria, despesas, reserva, total });
+      }
+
+      fecharModalDespesa();
+      renderizarTabela();
+      atualizarTotais();
+      renderCalendar(currentYear, currentMonth);
+      activateTab(tabCalculos, panelCalculos);
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        fecharModalDespesa();
+      }
+    });
+
+    // Inicializa calendário e tabela
+    renderCalendar(currentYear, currentMonth);
+    renderizarTabela();
+    atualizarTotais();
+  </script>
+
+  <!-- Manifest JSON -->
+  <script type="application/json" id="manifest-json">
+  {
+    "name": "App de Cálculos",
+    "short_name": "Cálculos",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#2563eb",
+    "theme_color": "#2563eb",
+    "icons": [
+      {
+        "src": "https://placehold.co/192x192/png?text=App",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "https://placehold.co/512x512/png?text=App",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
+  </script>
+
+  <script>
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => {
+          console.error('Falha ao registrar service worker:', err);
+        });
+      });
+    }
+  </script>
+
+  <!-- Service Worker -->
+  <script type="text/javascript">
+    // Inline service worker registration and code for demo purposes
+    // In production, use separate sw.js file
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE_NAME = 'app-calculos-cache-v1';
+        const urlsToCache = [
+          '.',
+          'https://cdn.tailwindcss.com',
+          'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',
+          'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap'
+        ];
+
+        self.addEventListener('install', event => {
+          event.waitUntil(
+            caches.open(CACHE_NAME)
+              .then(cache => cache.addAll(urlsToCache))
+          );
+        });
+
+        self.addEventListener('fetch', event => {
+          event.respondWith(
+            caches.match(event.request)
+              .then(response => response || fetch(event.request))
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(console.error);
+    }
+  </script>
+</body>
+</html>
